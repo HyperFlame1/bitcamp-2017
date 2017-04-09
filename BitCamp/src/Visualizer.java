@@ -1,6 +1,8 @@
 import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.io.File;
 import java.io.IOException;
 
@@ -12,15 +14,20 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import javax.swing.*;
 
 import com.leapmotion.leap.*;
+import java.util.LinkedList;
 
-public class Visualizer{
+public class Visualizer implements KeyListener{
 	static final int width = 798;
 	static final int height = 600;
 	final float fps = 60;
 	final float spf = 1000f/fps;
-	long timer;
+	static long timer;
+	static boolean daft = false;
+	LinkedList<Ring> rings;
 	Clip[] whitePianoNotes = new Clip[7];
 	Clip[] blackPianoNotes = new Clip[5];
+	Clip[] whiteDaftNotes = new Clip[7];
+	Clip[] blackDaftNotes = new Clip[5];
 	File file;
 	JFrame frame;
 	Keyboard keyboard;
@@ -28,12 +35,18 @@ public class Visualizer{
 	InteractionBox box = new InteractionBox();
 	public Visualizer(Keyboard keyboard) {
 		this.keyboard = keyboard;
+		rings = new LinkedList<>();
 		frame = new JFrame("Piano");
 		frame.setSize(800,600);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		timer = System.currentTimeMillis();
+		timer = 0;//System.currentTimeMillis();
 		JPanel panel = new JPanel(){
 			public void paintComponent(Graphics g){
+				timer++;
+				if(timer%1100==0){
+					for(int i=0;i<12;i++)
+						keyboard.neons[i] = Keyboard.randomNeon();
+				}
 				//timer += spf;
 				//long sleep = timer - System.currentTimeMillis();
 				//if(sleep >= 0){
@@ -66,6 +79,28 @@ public class Visualizer{
 		}catch(UnsupportedAudioFileException | IOException | LineUnavailableException e){
 			e.printStackTrace();
 		}
+		try{
+			for(int i=0;i<7;i++){
+				whiteDaftNotes[i] = AudioSystem.getClip();
+			}
+			for(int i=0;i<5;i++){
+				blackDaftNotes[i] = AudioSystem.getClip();
+			}
+			whiteDaftNotes[0].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 11.wav")));
+			whiteDaftNotes[1].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 12.wav")));
+			whiteDaftNotes[2].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 1.wav")));
+			whiteDaftNotes[3].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 5.wav")));
+			whiteDaftNotes[4].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 6.wav")));
+			whiteDaftNotes[5].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 7.wav")));
+			whiteDaftNotes[6].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 8.wav")));
+			blackDaftNotes[0].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 9.wav")));
+			blackDaftNotes[1].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 10.wav")));
+			blackDaftNotes[2].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 2.wav")));
+			blackDaftNotes[3].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 3.wav")));
+			blackDaftNotes[4].open(AudioSystem.getAudioInputStream(new File("C:\\Users\\User\\Music\\bitcamp music notes\\d_Insert 4.wav")));
+		}catch(UnsupportedAudioFileException | IOException | LineUnavailableException e){
+			e.printStackTrace();
+		}
 		/*
 		 * Clip clip = AudioSystem.getClip();
 							AudioInputStream ain;
@@ -82,6 +117,12 @@ public class Visualizer{
 	}
 	
 	private void draw(Graphics g){ //Draw stuff here
+		for(int i=0;i<rings.size();i++){
+			if(rings.get(i).killself){
+				rings.remove(i);
+				i--;
+			}
+		}
 		int w = 30;
 		int[] previousFingers = new int[5];
 		keyboard.draw(g);
@@ -114,61 +155,72 @@ public class Visualizer{
 						if(normalized.getZ() > (3.0/5.0))
 						{
 							keyboard.whitePressed[keyIndex] = true;
-							whitePianoNotes[keyIndex].start();
+							if(daft){
+								whiteDaftNotes[keyIndex].start();
+								if(timer%250==0)
+									rings.add(new Ring((int)(normalized.getX()*798),(int)(normalized.getZ()*600)));
+							}else
+								whitePianoNotes[keyIndex].start();
 						}
 						else
 						{
 							if(normalized.getX() > 2.0/21.0 && normalized.getX() < 4.0/21.0)
 							{
 								keyboard.blackPressed[0] = true;
-								blackPianoNotes[0].start();
+								if(daft){
+									blackDaftNotes[0].start();
+									if(timer%250==0)
+										rings.add(new Ring((int)(normalized.getX()*798),(int)(normalized.getZ()*600)));
+								}else
+									blackPianoNotes[0].start();
 							}
 							else if(normalized.getX() > 5.0/21.0 && normalized.getX() < 7.0/21.0)
 							{
 								keyboard.blackPressed[1] = true;
-								blackPianoNotes[1].start();
+								if(daft){
+									blackDaftNotes[1].start();
+									if(timer%250==0)
+										rings.add(new Ring((int)(normalized.getX()*798),(int)(normalized.getZ()*600)));
+								}else
+									blackPianoNotes[1].start();
 							}
-							else if(normalized.getX() > 12.0/21.0 && normalized.getX() < 14.0/21.0)
+							else if(normalized.getX() > 11.0/21.0 && normalized.getX() < 13.0/21.0)
 							{
 								keyboard.blackPressed[2] = true;
-								blackPianoNotes[2].start();
+								if(daft){
+									if(timer%250==0)
+										rings.add(new Ring((int)(normalized.getX()*798),(int)(normalized.getZ()*600)));
+									blackDaftNotes[2].start();
+								}else
+									blackPianoNotes[2].start();
 							}
-							else if(normalized.getX() > 15.0/21.0 && normalized.getX() < 17.0/21.0)
+							else if(normalized.getX() > 14.0/21.0 && normalized.getX() < 16.0/21.0)
 							{
 								keyboard.blackPressed[3] = true;
-								blackPianoNotes[3].start();
+								if(daft){
+									if(timer%250==0)
+										rings.add(new Ring((int)(normalized.getX()*798),(int)(normalized.getZ()*600)));
+									blackDaftNotes[3].start();
+								}else
+									blackPianoNotes[3].start();
 							}
-							else if(normalized.getX() > 18.0/21.0 && normalized.getX() < 20.0/21.0)
+							else if(normalized.getX() > 17.0/21.0 && normalized.getX() < 19.0/21.0)
 							{
 								keyboard.blackPressed[4] = true;
-								blackPianoNotes[4].start();
+								if(daft){
+									if(timer%250==0)
+										rings.add(new Ring((int)(normalized.getX()*798),(int)(normalized.getZ()*600)));
+									blackDaftNotes[4].start();
+								}else
+									blackPianoNotes[4].start();
 							}
 						}
 						g.setColor(Color.GREEN);
-						g.fillOval((int)(normalized.getX()*798-w/2), (int)(normalized.getZ()*600-w/2), w, w);
+						g.fillOval((int)(normalized.getX()*798-w/2.0), (int)(normalized.getZ()*600-w/2.0), w, w);
 					}
 					else{
 						g.setColor(Color.RED);
-						g.fillOval((int)(normalized.getX()*798-w/2), (int)(normalized.getZ()*600-w/2), w, w);
-						/*for(Finger f : fingers)
-						{
-							if(!f.equals(fingers.get(i))){
-								fingerTip = f.bone(Bone.Type.TYPE_DISTAL);
-								xTip = (float) (fingerTip.center().getX() + (fingerTip.length()/2.0) *  fingerTip.direction().getX());
-								yTip = (float) (fingerTip.center().getY() + (fingerTip.length()/2.0) *  fingerTip.direction().getY());
-								zTip = (float) (fingerTip.center().getZ() + (fingerTip.length()/2.0) *  fingerTip.direction().getZ());
-								tipPos = new Vector(xTip, yTip, zTip);
-								normalized = box.normalizePoint(tipPos);
-								int keyIndexOther = (int)(normalized.getX()*7);
-								if((keyIndex == keyIndexOther)){
-										whitePianoNotes[keyIndex].start();
-										
-								}
-							}
-						}*/
-						//if(!(previousFinger == keyIndex))
-							
-						
+						g.fillOval((int)(normalized.getX()*798-w/2.0), (int)(normalized.getZ()*600-w/2.0), w, w);
 					}
 					/*if(normalized.getY() > .35 && keyboard.whitePressed[keyIndex]== true){//Pressing Key
 						keyboard.whitePressed[keyIndex]= false;
@@ -181,8 +233,13 @@ public class Visualizer{
 					//whitePianoNotes[j].start();
 				}
 				else{
-					whitePianoNotes[j].stop();
-					whitePianoNotes[j].setMicrosecondPosition(0);
+					if(daft){
+						whiteDaftNotes[j].stop();
+						whiteDaftNotes[j].setMicrosecondPosition(0);
+					}else{
+						whitePianoNotes[j].stop();
+						whitePianoNotes[j].setMicrosecondPosition(0);
+					}
 				}
 				if(j < 5)
 				{
@@ -190,11 +247,36 @@ public class Visualizer{
 						//whitePianoNotes[j].start();
 					}
 					else{
-						blackPianoNotes[j].stop();
-						blackPianoNotes[j].setMicrosecondPosition(0);
+						if(daft){
+							blackDaftNotes[j].stop();
+							blackDaftNotes[j].setMicrosecondPosition(0);
+						}else{
+							blackPianoNotes[j].stop();
+							blackPianoNotes[j].setMicrosecondPosition(0);
+						}
 					}
 				}
 			}
 		}
+		for(Ring r:rings){
+			r.draw(g);
+		}
+	}
+	@Override
+	public void keyPressed(KeyEvent arg0) {
+		if(arg0.getKeyChar()=='m'){
+			daft = !daft;
+		}
+		
+	}
+	@Override
+	public void keyReleased(KeyEvent arg0) {
+		// TODO Auto-generated method stub
+		
+	}
+	@Override
+	public void keyTyped(KeyEvent arg0) {
+		// TODO Auto-generated method stub
+		
 	}
 }

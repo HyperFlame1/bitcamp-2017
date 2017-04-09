@@ -5,12 +5,13 @@ import com.leapmotion.leap.*;
 import java.awt.Point;
 import java.awt.geom.Point2D;
 
-public class HelloWorld{
+public class Driver{
 	static Visualizer visual;
 	static Keyboard keyboard;
 	public static void main(String[] args) {
 		keyboard = new Keyboard();
 		visual = new Visualizer(keyboard);
+		visual.frame.addKeyListener(visual);
 		// Create a sample listener and controller
 		SampleListener listener = new SampleListener();
 		Controller controller = new Controller();
